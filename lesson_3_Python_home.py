@@ -1,27 +1,14 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
-
 # домашнее задание 5
-
+"""
 1. Найдите информацию об организациях.
 a. Получите список ИНН из файла traders.txt.
 b. Найдите информацию об организациях с этими ИНН в файле ntraders.json.
 c. Сохраните информацию об ИНН, ОГРН и адресе организаций из файла traders.txt в файл traders.csv.
-
-
-# In[ ]:
-
+"""
 
 # 0 --- импортируем модули
 
 import requests, re, csv
-
-
-# In[ ]:
-
 
 # 1 --- получаем список ИНН из файла traders.txt
 
@@ -33,12 +20,6 @@ response = requests.get(file_inn)
 
 # 1.3 --- удаляем лишние символы с помощью регулярных выражений, преобразуем в список
 inn_list = str(re.sub('[^0-9]', ' ', str(response.content))).split()
-
-print(inn_list)
-
-
-# In[ ]:
-
 
 # 2 --- находим информацию об организациях с этими ИНН в файле traders.json
 
@@ -74,21 +55,12 @@ def find_companies(companies_list, inn_list, list_head):
 
 # 2.7 --- исполняем авторскую функцию - для поиска организации (в списке) по ИНН (в списке)
 list_traders = find_companies(companies_list, inn_list, list_head)
-print(list_traders)
-
-
-# In[ ]:
-
 
 # 3 --- сохраняем информацию об ИНН, ОГРН и адресе организаций из файла traders.txt в файл traders.csv\n",
 
 with open(file_traders, 'w', newline = '') as file:
     writer = csv.writer(file, dialect = 'excel', delimiter=';')
     writer.writerows(list_traders)
-
-
-# In[ ]:
-
 
 # 4 --- Напишите регулярное выражение для поиска email-адресов в тексте
 
@@ -97,19 +69,4 @@ file_email = 'https://raw.githubusercontent.com/sirotinsky/HSE_LegalPy/main/home
 
 # 4.2 --- определяем файл исходящих данных (загружаем на свой комп в текущую папку)
 file_traders = 'emails.json'
-
-# 4.3 --- создаем запрос
-response = requests.get(file_email, allow_redirects = True)
-
-# 4.4 --- преобразуем объект запроса в формат json (список компаний)
-text_list = response.json()
-
-print(text_list)
-
-
-
-# In[ ]:
-
-
-
 
