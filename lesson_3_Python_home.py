@@ -143,6 +143,5 @@ for row in range (0, len(df), 1):
 with open(file_dict, "w", encoding = "utf-8") as file:
     json.dump(dict_emails, file)
 
-# 4.2 --- определяем файл исходящих данных (загружаем на свой комп в текущую папку)
-file_traders = 'emails.json'
-
+# 4.10 --- примечание
+print('В задании 5 (пункт 2) указано сделать словарь с множеством адресов (set), но структура set неитерабельна и не выгружается в json.')
