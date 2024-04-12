@@ -1,24 +1,4 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# # домашнее задание 7
-# 
-# Реализуйте класс CourtCase.
-# 
-# При вызове метода конструктора экземпляра (__init__) должны создаваться следующие атрибуты экземпляра:
-# ● case_number (строка с номером дела — обязательный параметр) передаётся в качестве аргумента при создании экземпляра
-# ● case_participants (список по умолчанию пустой)
-# ● listening_datetimes (список по умолчанию пустой)
-# ● is_finished (значение по умолчанию False)
-# ● verdict (строка по умолчанию пустая)
-# 
-# У экземпляра должны быть следующие методы:
-# ● set_a_listening_datetime — добавляет в список listening_datetimes судебное заседание (структуру можете придумать сами)
-# ● add_participant — добавляет участника в список case_participants (можно просто ИНН)
-# ● remove_participant — убирает участника из списка case_participants
-# ● make_a_decision — вынести решение по делу, добавить verdict и сменить атрибут is_finished на True
-
-# In[35]:
+# домашнее задание 7
 
 
 # 1 --- создаем класс CourtCase
@@ -61,9 +41,6 @@ class CourtCase:
         self.is_finished = True
 
 
-# In[36]:
-
-
 # 2 --- проверка CourtCase
 
 case = CourtCase(case_number = '2-1223/24',
@@ -84,10 +61,3 @@ print('remove_participant:\n', case.case_number, case.case_participants, case.li
 
 case.make_a_decision(verdict = 'В удовлетворении иска отказать')
 print('make_a_decision:\n', case.case_number, case.case_participants, case.listening_datetimes, case.is_finished, case.verdict, '\n')
-
-
-# In[ ]:
-
-
-
-
