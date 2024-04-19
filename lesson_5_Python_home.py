@@ -1,40 +1,10 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# # домашнее задание 9
-# 
-# 1. Сгенерируйте с использованием функции range (случайный шаг от 3 до 5)
-# массив, содержащий отсортированные числа от 10 до 250 млн.
-# 
-# Можно использовать функцию randomint из модуля random для ещё большей
-# рандомизации значений, но для целей работы алгоритма бинарного поиска
-# проследите, чтобы значения в массиве были отсортированы.
-# 
-# 2. Сгенерируйте с помощью list comprehensions и функции randomint
-# (встроенный модуль random) 10 случайных чисел.
-# 
-# 3. Напишите функцию для алгоритма линейного поиска.
-# 
-# 4. Напишите функцию для алгоритма бинарного поиска.
-# 
-# 5. Проверьте наличие ранее сгенерированных случайных чисел в массиве
-# с помощью алгоритмов линейного и бинарного поиска, замерьте время
-# 
-
-# In[1]:
+# домашнее задание 9
 
 
-# 0 --- импортируем модуль
+# 0 --- импортируем модули
 
 import random
-
-random.randint(3, 5)
-
-list = [1,2,3,4,5,6]
-list[-1]
-
-
-# In[14]:
+from datetime import datetime
 
 
 # 1 --- Сгенерируйте с использованием функции range (случайный шаг от 3 до 5) массив, содержащий отсортированные числа от 10 до 250 млн.
@@ -47,67 +17,31 @@ while list_1[-1] <= 250000000:
 
 list_1.pop()
 
-print('первые и последние 10 чисел: ', list_1[:10] + list_1[-10:], '\nдлина массива: ', len(list_1))
-
-
-# In[33]:
+print(f'первые и последние 10 чисел: {list_1[:10] + list_1[-10:]}\nдлина массива: {len(list_1)}\n')
 
 
 # 2 --- Сгенерируйте с помощью list comprehensions и функции randomint (встроенный модуль random) 10 случайных чисел.
 
 list_2 = [random.randint(0, 99) for i in range (0, 10)]
 
-print(f'случайные числа: {list_2}\nдлина массива: {len(list_2)}')
-
-
-# In[37]:
+print(f'случайные числа: {list_2}\nдлина массива: {len(list_2)}\n')
 
 
 # 3 --- Напишите функцию для алгоритма линейного поиска.
 
-def find_bin(mylist, myint):
+def find_lin(mylist, myint):
 
-    while mylist:
-
-        i = len(mylist)//2
+    indicator = False
+    
+    for i in range(0, len(mylist), 1):
 
         if myint == mylist[i]:
-
             print(f'число {myint} найдено в массиве')
+            indicator = True
             break
 
-        elif len(mylist) == 1:
-            break
-
-        elif myint < mylist[i]:
-            mylist = mylist[:i]
-
-        else:
-            mylist = mylist[(i + 1):]
-
-    if myint != mylist[i]:
+    if indicator == False:
         print(f'число {myint} не найдено в массиве')
-
-myint = None
-
-while not myint:
-
-    myint = input('введите число от 10 до 250 млн')
-    
-    try:
-        myint = int(myint)
-        if myint < 10 or myint > 250000000:
-            myint = None
-    
-    except:
-        myint = None
-    
-    if myint 
-    
-find_bin (list_1, 16)
-
-
-# In[45]:
 
 
 # 4 --- Напишите функцию для алгоритма бинарного поиска.
@@ -116,14 +50,13 @@ def find_bin(mylist, myint):
 
     while mylist:
 
-        i = len(mylist)//2
+        i = (len(mylist)-1)//2
 
         if myint == mylist[i]:
-
             print(f'число {myint} найдено в массиве')
             break
 
-        elif len(mylist) == 1:
+        elif len(mylist) < 2:
             break
 
         elif myint < mylist[i]:
@@ -135,35 +68,46 @@ def find_bin(mylist, myint):
     if myint != mylist[i]:
         print(f'число {myint} не найдено в массиве')
 
-myint = None
 
-while not myint:
+# 5 --- Проверьте наличие ранее сгенерированных случайных чисел в массиве с помощью алгоритмов линейного и бинарного поиска, замерьте время
 
-    myint = input('введите число от 10 до 250 млн: ')
+def func_imput_num():
     
-    try:
-        myint = int(myint)
-        if myint < 10 or myint > 250000000:
+    myint = None
+
+    while not myint:
+        myint = input('введите число от 10 до 250 млн: ')
+
+        try:
+
+            myint = int(myint)
+
+            if myint < 10 or myint > 250000000:
+                myint = None
+    
+        except:
             myint = None
-    
-    except:
-        myint = None
-    
+
+    return myint
+
+
+print('проверка наличия ранее сгенерированных случайных чисел в массиве с помощью алгоритма линейного поиска')
+
+myint = func_imput_num()
+start = datetime.now()
+print(f'начало поиска: {start}')        
+find_lin (list_1, myint)
+final = datetime.now()
+print(f'окончание поиска: {final}')
+print(f'продолжительность поиска: {final - start}\n')
+
+
+print('проверка наличия ранее сгенерированных случайных чисел в массиве с помощью алгоритма бинарного поиска')
+
+myint = func_imput_num()
+start = datetime.now()
+print(f'начало поиска: {start}')        
 find_bin (list_1, myint)
-
-
-
-# In[43]:
-
-
-5. Проверьте наличие ранее сгенерированных случайных чисел в массиве
-с помощью алгоритмов линейного и бинарного поиска, замерьте время
-
-
-
-
-# In[ ]:
-
-
-
-
+final = datetime.now()
+print(f'окончание поиска: {final}')
+print(f'продолжительность поиска: {final - start}\n')
