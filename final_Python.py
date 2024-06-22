@@ -16,7 +16,7 @@ class InflationRateCBRF:
     """
     Класс для сбора с сайта ЦБ РФ данных об инфляции за период.
     Для корректной работы импортируйте библиотеки
-    BeautifulSoup, datetime, calendar, Decimal, json, requests, sys.
+    bs4, datetime, calendar, decimal, json, requests, sys, os.
     """
 
     
