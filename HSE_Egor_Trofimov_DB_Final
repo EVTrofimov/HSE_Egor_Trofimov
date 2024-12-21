@@ -35,7 +35,7 @@ CREATE TABLE groups (
 CREATE TABLE students (
     id_student INT PRIMARY KEY,
     name_student CHARACTER VARYING(128) NOT NULL,
-    dob_student DATE CONSTRAINT NOT NULL Date_Value CHECK (dob_student >= '1901-01-01' AND dob_student <= CURRENT_DATE),
+    dob_student DATE CONSTRAINT NOT NULL Date_Value CHECK (dob_student BETWEEN DATE '1901-01-01' AND CURRENT_DATE),
     email_student CHARACTER VARYING(128) NOT NULL,
     id_group NOT NULL references groups(id_group),
     CONSTRAINT must_be_different UNIQUE(name_student, dob_student, email_student)
@@ -44,7 +44,7 @@ CREATE TABLE students (
 CREATE TABLE teachers (
     id_teacher INT PRIMARY KEY,
     name_teacher CHARACTER VARYING(128) NOT NULL,
-    dob_teacher DATE NOT NULL CONSTRAINT Date_Value CHECK (dob_teacher >= '1901-01-01' AND dob_teacher <= CURRENT_DATE),
+    dob_teacher DATE NOT NULL CONSTRAINT Date_Value CHECK (dob_teacher BETWEEN DATE '1901-01-01' AND CURRENT_DATE),
     email_teacher CHARACTER VARYING(128) NOT NULL,
     CONSTRAINT must_be_different UNIQUE(name_teacher, dob_teacher, email_teacher)
 );
@@ -59,10 +59,9 @@ CREATE TABLE courses (
     name_course CHARACTER VARYING(128) NOT NULL,
     id_courses_type INT NOT NULL references courses_type(id_courses_type), 
     id_teacher INT NOT NULL references teachers(id_teacher),
-    year_of_study SMALLINT NOT NULL CONSTRAINT Year_Value CHECK (year_of_study >= 1 AND year_of_study <= 6), 
-    course_start DATE NOT NULL CONSTRAINT Date_Value CHECK (course_start >= '1901-01-01'),
-    course_final DATE NOT NULL CONSTRAINT Date_Value CHECK (course_final - course_start >= INTERVAL '1 day'
-        AND course_final - course_start <= INTERVAL '1 year'
+    year_of_study SMALLINT NOT NULL CONSTRAINT Year_Value CHECK (year_of_study BETWEEN 1 AND 6), 
+    course_start DATE NOT NULL CONSTRAINT Date_Value CHECK (course_start >= DATE '1901-01-01'),
+    course_final DATE NOT NULL CONSTRAINT Date_Value CHECK ((course_final - course_start) BETWEEN INTERVAL '1 day' AND INTERVAL '1 year',
     CONSTRAINT must_be_different UNIQUE(name_course, id_teacher, year_of_study, course_start, course_final)
 );
 
@@ -70,8 +69,8 @@ CREATE TABLE scores (
     id_score INT PRIMARY KEY,
     id_student INT NOT NULL references students(id_student),
     id_course INT NOT NULL references courses(id_course),
-    score_date DATE CONSTRAINT Date_Value CHECK (score_date >= '1901-01-01' AND score_date <= CURRENT_DATE),
-    score SMALLINT NOT NULL CONSTRAINT Score_Value CHECK (score >= 2 AND score <= 5),
+    score_date DATE CONSTRAINT Date_Value CHECK (score_date BETWEEN DATE '1901-01-01' AND CURRENT_DATE),
+    score SMALLINT CONSTRAINT Score_Value CHECK (score BETWEEN 2 AND 5),
     CONSTRAINT must_be_different UNIQUE(id_student, id_course)
 );
 
@@ -97,41 +96,84 @@ CREATE TRIGGER delete_course_type AFTER DELETE ON courses_type FOR EACH ROW
 CREATE TRIGGER delete_course AFTER DELETE ON teachers FOR EACH ROW
     DELETE FROM scores WHERE id_course = OLD.id_course;
 
-
 # СОЗДАЕМ ПРОЦЕДУРЫ
 
-# Процедура запроса к базе данных - возможность выводить список студентов по определённому предмету
+# процедура запроса к базе данных - возможность выводить список студентов по определённому предмету
+CREATE PROCEDURE get_students_on_course(IN idcourse INT)
+BEGIN
+    SELECT students.id_student, students.name_student FROM students
+    JOIN SELECT scores.id_student FROM scores WHERE id_course = idcourse
+    ON students.id_student = scores.id_student;
+END
 
-# Процедура запроса к базе данных - возможность выводить список предметов, которые преподает конкретный преподаватель
+# процедура запроса к базе данных - возможность выводить список предметов, которые преподает конкретный преподаватель
+CREATE PROCEDURE get_courses_of_teacher(IN idteacher INT)
+BEGIN
+    SELECT * FROM courses WHERE id_teacher = idteacher;
+END
 
-# Процедура запроса к базе данных - возможность выводить средний балл студента по всем предметам
+# процедура запроса к базе данных - возможность выводить средний балл студента по всем предметам
+CREATE PROCEDURE get_avg_score_of_student(IN idstudent INT)
+BEGIN
+    SELECT AVG(score) FROM scores WHERE score IS NOT NULL AND id_student = idstudent;
+END
 
-# Процедура запроса к базе данных - возможность выводить рейтинг преподавателей по средней оценке студентов
+# процедура запроса к базе данных - возможность выводить рейтинг преподавателей по средней оценке студентов
 
-# Процедура запроса к базе данных - возможность выводить список преподавателей, которые преподавали более 3 предметов за последний год
 
-# Процедура запроса к базе данных - возможность выводить список студентов, которые имеют средний балл
+
+
+# процедура запроса к базе данных - возможность выводить список преподавателей, которые преподавали более 3 предметов за последний год
+CREATE PROCEDURE get_teachers_3_or_more_courses_last_year()
+BEGIN
+    SELECT * FROM teachers
+    JOIN SELECT courses.id_teacher FROM courses WHERE (SELECT SUM(*) FROM courses        >= 3)
+    ON teachers.id_teacher = courses.id_teacher;
+END
+
+SELECT COUNT(*) FROM courses WHERE 
+
+CREATE TABLE teachers (
+    id_teacher INT PRIMARY KEY,
+    name_teacher CHARACTER VARYING(128) NOT NULL,
+    dob_teacher DATE NOT NULL CONSTRAINT Date_Value CHECK (dob_teacher >= '1901-01-01' AND dob_teacher <= CURRENT_DATE),
+    email_teacher CHARACTER VARYING(128) NOT NULL,
+CREATE TABLE courses (
+    id_course INT PRIMARY KEY,
+    name_course CHARACTER VARYING(128) NOT NULL,
+    id_courses_type INT NOT NULL references courses_type(id_courses_type), 
+    id_teacher INT NOT NULL references teachers(id_teacher),
+    year_of_study SMALLINT NOT NULL CONSTRAINT Year_Value CHECK (year_of_study >= 1 AND year_of_study <= 6), 
+    course_start DATE NOT NULL CONSTRAINT Date_Value CHECK (course_start >= '1901-01-01'),
+    course_final DATE NOT NULL CONSTRAINT Date_Value CHECK (course_final - course_start >= INTERVAL '1 day'
+        AND course_final - course_start <= INTERVAL '1 year'
+    CONSTRAINT must_be_different UNIQUE(name_course, id_teacher, year_of_study, course_start, course_final)
+
+
+
+
+# процедура запроса к базе данных - возможность выводить список студентов, которые имеют средний балл
     # выше 4 по математическим предметам, но ниже 3 по гуманитарным
 
-# Процедура запроса к базе данных - возможность определить предметы, по которым больше всего двоек в текущем семестре
+# процедура запроса к базе данных - возможность определить предметы, по которым больше всего двоек в текущем семестре
 
-# Процедура запроса к базе данных - возможность выводить студентов, которые получили высший балл по всем своим экзаменам,
+# процедура запроса к базе данных - возможность выводить студентов, которые получили высший балл по всем своим экзаменам,
     # и преподавателей, которые вели эти предметы
 
-# Процедура запроса к базе данных - возможность просматривать изменение среднего балла студента по годам обучения
+# процедура запроса к базе данных - возможность просматривать изменение среднего балла студента по годам обучения
 
-# Процедура запроса к базе данных - возможность определить группы, в которых средний балл выше, чем в других,
+# процедура запроса к базе данных - возможность определить группы, в которых средний балл выше, чем в других,
     # по аналогичным предметам, чтобы выявить лучшие методики преподавания или особенности состава группы
 
-# Процедура запроса к базе данных - вставка записи о новом студенте с его личной информацией,
+# процедура запроса к базе данных - вставка записи о новом студенте с его личной информацией,
     # такой как ФИО, дата рождения, контактные данные и др.
 
-# Процедура запроса к базе данных - обновление контактной информации преподавателя,
+# процедура запроса к базе данных - обновление контактной информации преподавателя,
     # например, электронной почты или номера телефона, на основе его идентификационного номера или ФИО
 
-# Процедура запроса к базе данных - удаление записи о предмете, который больше не преподают в учебном заведении
+# процедура запроса к базе данных - удаление записи о предмете, который больше не преподают в учебном заведении
 
-# Процедура запроса к базе данных - вставка новой записи об оценке, выставленной студенту по определённому предмету,
+# процедура запроса к базе данных - вставка новой записи об оценке, выставленной студенту по определённому предмету,
     # с указанием даты, преподавателя и полученной оценки
 
 
