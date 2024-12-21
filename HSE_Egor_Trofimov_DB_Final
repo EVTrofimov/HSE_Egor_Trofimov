@@ -124,41 +124,46 @@ END
 
 
 # процедура запроса к базе данных - возможность выводить список преподавателей, которые преподавали более 3 предметов за последний год
-CREATE PROCEDURE get_teachers_3_or_more_courses_last_year()
+CREATE PROCEDURE get_teachers_more_3_courses_last_year()
 BEGIN
     SELECT * FROM teachers
-    JOIN SELECT courses.id_teacher FROM courses WHERE (SELECT SUM(*) FROM courses        >= 3)
+    JOIN SELECT * FROM courses WHERE id_teacher IN (SELECT id_teacher
+        FROM (SELECT * FROM courses
+        WHERE ((course_final + INTERVAL '1 year') > CURENT_DATE))
+        GROUP BY id_teacher HAVING COUNT(*) > 3)
     ON teachers.id_teacher = courses.id_teacher;
 END
 
-SELECT COUNT(*) FROM courses WHERE 
-
-CREATE TABLE teachers (
-    id_teacher INT PRIMARY KEY,
-    name_teacher CHARACTER VARYING(128) NOT NULL,
-    dob_teacher DATE NOT NULL CONSTRAINT Date_Value CHECK (dob_teacher >= '1901-01-01' AND dob_teacher <= CURRENT_DATE),
-    email_teacher CHARACTER VARYING(128) NOT NULL,
-CREATE TABLE courses (
-    id_course INT PRIMARY KEY,
-    name_course CHARACTER VARYING(128) NOT NULL,
-    id_courses_type INT NOT NULL references courses_type(id_courses_type), 
-    id_teacher INT NOT NULL references teachers(id_teacher),
-    year_of_study SMALLINT NOT NULL CONSTRAINT Year_Value CHECK (year_of_study >= 1 AND year_of_study <= 6), 
-    course_start DATE NOT NULL CONSTRAINT Date_Value CHECK (course_start >= '1901-01-01'),
-    course_final DATE NOT NULL CONSTRAINT Date_Value CHECK (course_final - course_start >= INTERVAL '1 day'
-        AND course_final - course_start <= INTERVAL '1 year'
-    CONSTRAINT must_be_different UNIQUE(name_course, id_teacher, year_of_study, course_start, course_final)
-
-
-
-
 # процедура запроса к базе данных - возможность выводить список студентов, которые имеют средний балл
     # выше 4 по математическим предметам, но ниже 3 по гуманитарным
+    # примечание: считаем, что математические имеют id_courses_type=1, а гуманитарные - id_courses_type=2 
+CREATE PROCEDURE get_students_with_more4_in_math_and_less3_in_human()
+BEGIN
+    SELECT * FROM students
+    JOIN
+    (SELECT id_student FROM
+        ((SELECT id_course FROM courses WHERE id_courses_type = 1)
+        JOIN
+        (SELECT id_student, id_course, score FROM scores)
+        ON courses.id_course = scores.id_course
+        GROUP BY id_course HAVING AVG(score) > 4)
+    JOIN
+    SELECT id_student FROM
+        ((SELECT id_course FROM courses WHERE id_courses_type = 2)
+        JOIN
+        (SELECT id_student, id_course, score FROM scores)
+        ON courses.id_course = scores.id_course
+        GROUP BY id_course HAVING AVG(score) < 3));
+END
 
 # процедура запроса к базе данных - возможность определить предметы, по которым больше всего двоек в текущем семестре
 
+
+
 # процедура запроса к базе данных - возможность выводить студентов, которые получили высший балл по всем своим экзаменам,
     # и преподавателей, которые вели эти предметы
+
+
 
 # процедура запроса к базе данных - возможность просматривать изменение среднего балла студента по годам обучения
 
@@ -172,6 +177,8 @@ CREATE TABLE courses (
     # например, электронной почты или номера телефона, на основе его идентификационного номера или ФИО
 
 # процедура запроса к базе данных - удаление записи о предмете, который больше не преподают в учебном заведении
+
+
 
 # процедура запроса к базе данных - вставка новой записи об оценке, выставленной студенту по определённому предмету,
     # с указанием даты, преподавателя и полученной оценки
