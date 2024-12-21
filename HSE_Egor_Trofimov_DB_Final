@@ -10,16 +10,20 @@
     # в таблице courses - id_course
     # в таблице scores - id_score
 # устанавливаем отношения между таблицами и внешние ключи:
-    # в таблице students - внешнйи ключ references groups(id_group)
-    # в таблице courses - внешний ключ teachers(id_teacher)
-    # в таблице scores - внешние ключи courses(id_student), (id_course)
+    # в таблице students - внешний ключ references groups(id_group)
+    # в таблице courses - внешние ключи courses_type(id_courses_type), teachers(id_teacher)
+    # в таблице scores - внешние ключи courses(id_student), courses(id_course)
 # создаем ограничения на атрибуты:
-    # DoB_Value в таблицах students, teachers - после 1 января 1901 до текущей даты
+    # Date_Value в таблицах students, teachers - от 1 января 1901 до текущей даты
+    # Date_Value в таблице courses: для course_start - от 1 января 1901, для course_final - интервал от 1 дня до 1 года
+    # Year_Value в таблице courses - от 1 до 6
     # Score_Value в таблице score - от 2 до 5
-# создаем ограничения уникальности must_be_different для групп столбцов (ненулевых) - во избежание дублирования строк:
+# создаем ограничения уникальности must_be_different для ненулевых столбцов, групп столбцов - во избежание дублирования строк:
+    # в таблице groups - для столбца name_group
     # в таблице students - для группы столбцов name_student, dob_student, email_student
     # в таблице teachers - для группы столбцов name_teacher, dob_teacher, email_teacher
-    # в таблице courses - для группы столбцов name_course, id_teacher
+    # в таблице courses_type - для столбца name_courses_type
+    # в таблице courses - для группы столбцов name_course, id_teacher, year_of_study, course_start, course_final
 # создаем ограничения уникальности must_be_different в таблице scores
     # для группы столбцов id_student, id_course - во избежание противоречивых записей об оценках
 
@@ -31,7 +35,7 @@ CREATE TABLE groups (
 CREATE TABLE students (
     id_student INT PRIMARY KEY,
     name_student CHARACTER VARYING(128) NOT NULL,
-    dob_student DATE CONSTRAINT NOT NULL DoB_Value CHECK (dob_student > '1901-01-01' AND dob_student < CURRENT_DATE),
+    dob_student DATE CONSTRAINT NOT NULL Date_Value CHECK (dob_student >= '1901-01-01' AND dob_student <= CURRENT_DATE),
     email_student CHARACTER VARYING(128) NOT NULL,
     id_group NOT NULL references groups(id_group),
     CONSTRAINT must_be_different UNIQUE(name_student, dob_student, email_student)
@@ -40,40 +44,59 @@ CREATE TABLE students (
 CREATE TABLE teachers (
     id_teacher INT PRIMARY KEY,
     name_teacher CHARACTER VARYING(128) NOT NULL,
-    dob_teacher DATE NOT NULL CONSTRAINT DoB_Value CHECK (dob_teacher > '1901-01-01' AND dob_teacher < CURRENT_DATE),
+    dob_teacher DATE NOT NULL CONSTRAINT Date_Value CHECK (dob_teacher >= '1901-01-01' AND dob_teacher <= CURRENT_DATE),
     email_teacher CHARACTER VARYING(128) NOT NULL,
     CONSTRAINT must_be_different UNIQUE(name_teacher, dob_teacher, email_teacher)
+);
+
+CREATE TABLE courses_type (
+    id_courses_type INT PRIMARY KEY,
+    name_courses_type CHARACTER VARYING(128) NOT NULL UNIQUE
 );
 
 CREATE TABLE courses (
     id_course INT PRIMARY KEY,
     name_course CHARACTER VARYING(128) NOT NULL,
+    id_courses_type INT NOT NULL references courses_type(id_courses_type), 
     id_teacher INT NOT NULL references teachers(id_teacher),
-    CONSTRAINT must_be_different UNIQUE(name_course, id_teacher)
+    year_of_study SMALLINT NOT NULL CONSTRAINT Year_Value CHECK (year_of_study >= 1 AND year_of_study <= 6), 
+    course_start DATE NOT NULL CONSTRAINT Date_Value CHECK (course_start >= '1901-01-01'),
+    course_final DATE NOT NULL CONSTRAINT Date_Value CHECK (course_final - course_start >= INTERVAL '1 day'
+        AND course_final - course_start <= INTERVAL '1 year'
+    CONSTRAINT must_be_different UNIQUE(name_course, id_teacher, year_of_study, course_start, course_final)
 );
 
 CREATE TABLE scores (
     id_score INT PRIMARY KEY,
     id_student INT NOT NULL references students(id_student),
     id_course INT NOT NULL references courses(id_course),
-    score_date DATE CONSTRAINT DoB_Value CHECK (score_date > '1901-01-01' AND score_date < CURRENT_DATE),
-    score SMALLINT NOT NULL CONSTRAINT Score_Value CHECK (score > 1 AND score < 6),
+    score_date DATE CONSTRAINT Date_Value CHECK (score_date >= '1901-01-01' AND score_date <= CURRENT_DATE),
+    score SMALLINT NOT NULL CONSTRAINT Score_Value CHECK (score >= 2 AND score <= 5),
     CONSTRAINT must_be_different UNIQUE(id_student, id_course)
 );
 
-# СОЗДАЕМ ТРИГГЕРЫ
+# СОЗДАЕМ ТРИГГЕРЫ НА УДАЛЕНИЕ СТРОК - УДАЛЕЛЕНИЯ КОРРЕЛЯТОВ В ДРУИХ ТАБЛИЦАХ ДЛЯ ПРЕДОТВРАЩЕНИЯ НЕКОРРЕКТНЫХ ЗАПИСЕЙ
 
-# триггеры на удаление строк в таблицах students, teachers, courses - во избежание
-    # сохранения после этого некорректных (некоррелирующих) записей в таблицах courses, scores
+# триггер на удаление строки в таблице groups - с удалением коррелирующих строк в таблице students
+CREATE TRIGGER delete_group AFTER DELETE ON groups FOR EACH ROW
+    DELETE FROM students WHERE id_group = OLD.id_group;
 
+# триггер на удаление строки в таблице students - с удалением коррелирующих строк в таблице scores
 CREATE TRIGGER delete_student AFTER DELETE ON students FOR EACH ROW
     DELETE FROM scores WHERE id_student = OLD.id_student;
 
+# триггер на удаление строки в таблице teachers - с удалением коррелирующих строк в таблице courses
 CREATE TRIGGER delete_teacher AFTER DELETE ON teachers FOR EACH ROW
     DELETE FROM courses WHERE id_teacher = OLD.id_teacher;
 
+# триггер на удаление строки в таблице courses_type - с удалением коррелирующих строк в таблице courses
+CREATE TRIGGER delete_course_type AFTER DELETE ON courses_type FOR EACH ROW
+    DELETE FROM courses WHERE id_courses_type = OLD.id_courses_type;
+
+# триггер на удаление строки в таблице courses - с удалением коррелирующих строк в таблице scores
 CREATE TRIGGER delete_course AFTER DELETE ON teachers FOR EACH ROW
     DELETE FROM scores WHERE id_course = OLD.id_course;
+
 
 # СОЗДАЕМ ПРОЦЕДУРЫ
 
@@ -100,10 +123,11 @@ CREATE TRIGGER delete_course AFTER DELETE ON teachers FOR EACH ROW
 # Процедура запроса к базе данных - возможность определить группы, в которых средний балл выше, чем в других,
     # по аналогичным предметам, чтобы выявить лучшие методики преподавания или особенности состава группы
 
-# Процедура запроса к базе данных - вставка записи о новом студенте с его личной информацией, такой как ФИО, дата рождения, контактные данные и др.
+# Процедура запроса к базе данных - вставка записи о новом студенте с его личной информацией,
+    # такой как ФИО, дата рождения, контактные данные и др.
 
-# Процедура запроса к базе данных - обновление контактной информации преподавателя, например, электронной почты или номера телефона,
-    # на основе его идентификационного номера или ФИО
+# Процедура запроса к базе данных - обновление контактной информации преподавателя,
+    # например, электронной почты или номера телефона, на основе его идентификационного номера или ФИО
 
 # Процедура запроса к базе данных - удаление записи о предмете, который больше не преподают в учебном заведении
 
