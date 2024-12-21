@@ -2,7 +2,8 @@
 
 # отчёт и SQL-файл со структурой базы
 
-# 100 --- СОЗДАЕМ ТАБЛИЦЫ С АТРИБУТАМИ
+# СОЗДАЕМ ТАБЛИЦЫ С АТРИБУТАМИ
+
 # устанавливаем суррогатные первичные ключи (автоинкременты):
     # в таблице students - id_student
     # в таблице teachers - id_teacher
@@ -14,35 +15,45 @@
 # создаем ограничения на атрибуты:
     # DoB_Value в таблицах students, teachers - после 1 января 1901 до текущей даты
     # Score_Value в таблице score - от 2 до 5
+# создаем ограничения уникальности must_be_different для групп столбцов - во избежание дублирования строк:
+    # в таблице students - для группы столбцов name_student, dob_student, email_student
+    # в таблице teachers - для группы столбцов name_teacher, dob_teacher, email_teacher
+    # в таблице courses - для группы столбцов name_course, id_teacher
+# создаем ограничения уникальности must_be_different в таблице scores
+    # для группы столбцов id_student, id_course - во избежание противоречивых записей об оценках
 
 CREATE TABLE students (
-  id_student SMALLINT PRIMARY KEY,
-  name_student CHARACTER VARYING(128),
-  dob_student DATE CONSTRAINT DoB_Value CHECK (dob_student > '1901-01-01' AND dob_student < CURRENT_DATE),
-  email_student CHARACTER VARYING(128),
+    id_student INT PRIMARY KEY,
+    name_student CHARACTER VARYING(128),
+    dob_student DATE CONSTRAINT DoB_Value CHECK (dob_student > '1901-01-01' AND dob_student < CURRENT_DATE),
+    email_student CHARACTER VARYING(128),
+    CONSTRAINT must_be_different UNIQUE(name_student, dob_student, email_student)
 );
 
 CREATE TABLE teachers (
-  id_teacher SMALLINT PRIMARY KEY,
-  name_teacher CHARACTER VARYING(128),
-  dob_teacher DATE CONSTRAINT DoB_Value CHECK (dob_teacher > '1901-01-01' AND dob_teacher < CURRENT_DATE),
-  email_teacher CHARACTER VARYING(128)
+    id_teacher INT PRIMARY KEY,
+    name_teacher CHARACTER VARYING(128),
+    dob_teacher DATE CONSTRAINT DoB_Value CHECK (dob_teacher > '1901-01-01' AND dob_teacher < CURRENT_DATE),
+    email_teacher CHARACTER VARYING(128),
+    CONSTRAINT must_be_different UNIQUE(name_teacher, dob_teacher, email_teacher)
 );
 
 CREATE TABLE courses (
-  id_course SMALLINT PRIMARY KEY,
-  name_course CHARACTER VARYING(128),
-  id_teacher SMALLINT references teachers(id_teacher)
+    id_course INT PRIMARY KEY,
+    name_course CHARACTER VARYING(128),
+    id_teacher INT references teachers(id_teacher),
+    CONSTRAINT must_be_different UNIQUE(name_course, id_teacher)
 );
 
 CREATE TABLE scores (
-  id_score SMALLINT PRIMARY KEY,
-  id_student SMALLINT references courses(id_student),
-  id_course SMALLINT references courses(id_course),
-  score SMALLINT CONSTRAINT Score_Value CHECK (score > 1 AND score < 6)
+    id_score INT PRIMARY KEY,
+    id_student INT references courses(id_student),
+    id_course INT references courses(id_course),
+    score SMALLINT CONSTRAINT Score_Value CHECK (score > 1 AND score < 6),
+    CONSTRAINT must_be_different UNIQUE(id_student, id_course)
 );
 
-# 200 --- ЗАПОЛНЯЕМ ТАБЛИЦЫ СТРОКАМИ
+# ЗАПОЛНЯЕМ ТАБЛИЦЫ СТРОКАМИ
 
 INSERT INTO students (name_student, dob_student, email_student)
   VALUES ('Ivan Ivanov', '2000-01-01', 'ivan@mail.ru'),
