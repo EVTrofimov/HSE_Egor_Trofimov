@@ -1,6 +1,53 @@
 ### Data Bases Final Work by Egor Trofimov --- 12/21/2024 --- PostgreSQL
 
-# отчёт и SQL-файл со структурой базы
+
+# ДОКУМЕНТАЦИЯ: ОПИСАНИЕ СТРУКТУРЫ БД
+
+# таблица: groups
+# атрибуты:
+# id_group     INT                       PRIMARY KEY  ------------------------------т
+# name_group   CHARACTER VARYING(128)    NOT NULL                                   |
+                                                                                    |
+# таблица: students                                                                 |
+# атрибуты:                                                                         |
+# id_student    INT                      PRIMARY KEY ------------------------------ | --------------------------т
+# name_student  CHARACTER VARYING(128)   NOT NULL                                   |                           |
+# dob_student   DATE                     NOT NULL                                   |                           |
+# email_student CHARACTER VARYING(128)   NOT NULL                                   |                           |
+# id_group      INT                      NOT NULL     references groups(id_group) --!                           |
+                                                                                                                |
+# таблица: teachers                                                                                             |
+# атрибуты:                                                                                                     |
+# id_teacher    INT                      PRIMARY KEY --------------------------------------------------т        |
+# name_teacher  CHARACTER VARYING(128)   NOT NULL                                                      |        |
+# dob_teacher   DATE                     NOT NULL                                                      |        |
+# email_teacher CHARACTER VARYING(128)   NOT NULL                                                      |        |
+                                                                                                       |        |
+# таблица: courses_type                                                                                |        |
+# атрибуты:                                                                                            |        |
+# id_courses_type     INT                        PRIMARY KEY --------------------------------------т   |        |
+# name_courses_type   CHARACTER VARYING(128)     NOT NULL                                          |   |        |
+                                                                                                   |   |        |
+# таблица: courses                                                                                 |   |        |
+# атрибуты:                                                                                        |   |        |
+# id_course        INT PRIMARY KEY --------------------------------------------------------------  | - | --т    |
+# name_course      CHARACTER VARYING(128)   NOT NULL                                               |   |   |    |
+# id_courses_type  INT                      NOT NULL    references courses_type(id_courses_type) --!   |   |    |
+# id_teacher       INT                      NOT NULL    references teachers(id_teacher)----------------!   |    |
+# year_of_study    SMALLINT                 NOT NULL                                                       |    |
+# course_start     DATE                     NOT NULL                                                       |    |
+# course_final     DATE                     NOT NULL                                                       |    |
+                                                                                                           |    |
+# таблица: scores                                                                                          |    |
+# атрибуты:                                                                                                |    |
+# id_score      INT            PRIMARY KEY                                                                 |    |
+# id_student    INT            NOT NULL        references students(id_student) --------------------------- | ---!
+# id_course     INT            NOT NULL        references courses(id_course) ------------------------------!
+# score_date    DATE
+# score         SMALLINT
+
+
+# ОТЧЕТ
 
 # СОЗДАЕМ ТАБЛИЦЫ С АТРИБУТАМИ
 
@@ -35,9 +82,9 @@ CREATE TABLE groups (
 CREATE TABLE students (
     id_student INT PRIMARY KEY,
     name_student CHARACTER VARYING(128) NOT NULL,
-    dob_student DATE CONSTRAINT NOT NULL Date_Value CHECK (dob_student BETWEEN DATE '1901-01-01' AND CURRENT_DATE),
+    dob_student DATE NOT NULL CONSTRAINT Date_Value CHECK (dob_student BETWEEN DATE '1901-01-01' AND CURRENT_DATE),
     email_student CHARACTER VARYING(128) NOT NULL,
-    id_group NOT NULL references groups(id_group),
+    id_group INT NOT NULL references groups(id_group),
     CONSTRAINT must_be_different UNIQUE(name_student, dob_student, email_student)
 );
 
@@ -118,11 +165,6 @@ BEGIN
     SELECT AVG(score) FROM scores WHERE score IS NOT NULL AND id_student = idstudent;
 END
 
-# процедура запроса к базе данных - возможность выводить рейтинг преподавателей по средней оценке студентов
-
-
-
-
 # процедура запроса к базе данных - возможность выводить список преподавателей, которые преподавали более 3 предметов за последний год
 CREATE PROCEDURE get_teachers_more_3_courses_last_year()
 BEGIN
@@ -153,69 +195,42 @@ BEGIN
         JOIN
         (SELECT id_student, id_course, score FROM scores)
         ON courses.id_course = scores.id_course
-        GROUP BY id_course HAVING AVG(score) < 3));
+        GROUP BY id_course HAVING AVG(score) < 3)
+    USING(id_student))
+    USING(id_student);
 END
-
-# процедура запроса к базе данных - возможность определить предметы, по которым больше всего двоек в текущем семестре
-
-
-
-# процедура запроса к базе данных - возможность выводить студентов, которые получили высший балл по всем своим экзаменам,
-    # и преподавателей, которые вели эти предметы
-
-
-
-# процедура запроса к базе данных - возможность просматривать изменение среднего балла студента по годам обучения
-
-# процедура запроса к базе данных - возможность определить группы, в которых средний балл выше, чем в других,
-    # по аналогичным предметам, чтобы выявить лучшие методики преподавания или особенности состава группы
 
 # процедура запроса к базе данных - вставка записи о новом студенте с его личной информацией,
     # такой как ФИО, дата рождения, контактные данные и др.
+CREATE PROCEDURE insert_student(IN namestudent CHARACTER VARYING(128),
+                                IN dobstudent DATE,
+                                IN emailstudent CHARACTER VARYING(128),
+                                IN idgroup INT)
+BEGIN
+    INSERT INTO students (name_student, dob_student, email_student, id_group)
+        VALUES (namestudent, dobstudent, emailstudent, idgroup);
+END
 
 # процедура запроса к базе данных - обновление контактной информации преподавателя,
     # например, электронной почты или номера телефона, на основе его идентификационного номера или ФИО
+CREATE PROCEDURE update_email_of_teacher(IN idteacher INT, IN emailteacher CHARACTER VARYING(128))
+BEGIN
+    UPDATE teachers SET email_teacher = emailteacher WHERE id_teacher = idteacher;
+END
 
 # процедура запроса к базе данных - удаление записи о предмете, который больше не преподают в учебном заведении
-
-
+    # примечание: процедура удаления запустит триггер delete_course
+CREATE PROCEDURE delete_course_proc(IN id_course INT)
+BEGIN
+    DELETE FROM courses WHERE id_course = idcourse;
+END
 
 # процедура запроса к базе данных - вставка новой записи об оценке, выставленной студенту по определённому предмету,
     # с указанием даты, преподавателя и полученной оценки
-
-
-
-
-# ЗАПОЛНЯЕМ ТАБЛИЦЫ СТРОКАМИ
-
-INSERT INTO students (name_student, dob_student, email_student)
-  VALUES ('Ivan Ivanov', '2000-01-01', 'ivan@mail.ru'),
-  ('Peter Petrov', '2000-02-02', 'peter@mail.ru'),
-  ('Vasiliy Vasiliev', '2000-03-03', 'vasiliy@mail.ru')
-;
-
-INSERT INTO teachers (name_teacher, dob_teacher, email_teacher)
-  VALUES ('Boris Borisov', '1980-01-01', 'boris@mail.ru'),
-  ('Maria Markova', '1981-01-01', 'maria@mail.ru'),
-  ('Sergey Sergeev', '1982-01-01', 'sergey@mail.ru')
-;
-
-INSERT INTO courses (name_course, id_teacher)
-  VALUES ('Data Bases', 1),
-  ('Information Systems', 2),
-  ('Machine Learning', 3)
-;
-
-INSERT INTO scores (id_student, id_course, score)
-  VALUES (1, 1, 3),
-  (1, 2, 4),
-  (1, 3, 5),
-  (2, 1, 3),
-  (2, 2, 4),
-  (2, 3, 5),
-  (3, 1, 4),
-  (3, 2, 4),
-  (3, 3, 4)
-;
-
-
+    # примечание: процедура выполнится, если будут выполнены заданные отношения между таблицами,
+    # так как в таблице score - внешние ключи courses(id_student), courses(id_course)
+CREATE PROCEDURE insert_score(IN idstudent INT, IN idcourse INT, IN scoredate DATE, IN scorevalue SMALLINT)
+BEGIN
+    INSERT INTO scores (id_student, id_course, score_date, score)
+        VALUES (idstudent, idcourse, scoredate, scorevalue);
+END
