@@ -2,19 +2,30 @@
 
 # отчёт и SQL-файл со структурой базы
 
-# создаем таблицы
+# 100 --- СОЗДАЕМ ТАБЛИЦЫ С АТРИБУТАМИ
+# устанавливаем суррогатные первичные ключи (автоинкременты):
+    # в таблице students - id_student
+    # в таблице teachers - id_teacher
+    # в таблице courses - id_course
+    # в таблице scores - id_score
+# устанавливаем отношения между таблицами и внешние ключи:
+    # в таблице courses - внешний ключ teachers(id_teacher)
+    # в таблице scores - внешние ключи courses(id_student)б (id_course)
+# создаем ограничения на атрибуты:
+    # DoB_Value в таблицах students, teachers - после 1 января 1901 до текущей даты
+    # Score_Value в таблице score - от 2 до 5
 
 CREATE TABLE students (
   id_student SMALLINT PRIMARY KEY,
   name_student CHARACTER VARYING(128),
-  dob_student DATE,
+  dob_student DATE CONSTRAINT DoB_Value CHECK (dob_student > '1901-01-01' AND dob_student < CURRENT_DATE),
   email_student CHARACTER VARYING(128),
 );
 
 CREATE TABLE teachers (
   id_teacher SMALLINT PRIMARY KEY,
   name_teacher CHARACTER VARYING(128),
-  dob_teacher DATE,
+  dob_teacher DATE CONSTRAINT DoB_Value CHECK (dob_teacher > '1901-01-01' AND dob_teacher < CURRENT_DATE),
   email_teacher CHARACTER VARYING(128)
 );
 
@@ -28,12 +39,10 @@ CREATE TABLE scores (
   id_score SMALLINT PRIMARY KEY,
   id_student SMALLINT references courses(id_student),
   id_course SMALLINT references courses(id_course),
-  score SMALLINT
+  score SMALLINT CONSTRAINT Score_Value CHECK (score > 1 AND score < 6)
 );
 
-
-
-# заполняем таблицы значениями
+# 200 --- ЗАПОЛНЯЕМ ТАБЛИЦЫ СТРОКАМИ
 
 INSERT INTO students (name_student, dob_student, email_student)
   VALUES ('Ivan Ivanov', '2000-01-01', 'ivan@mail.ru'),
