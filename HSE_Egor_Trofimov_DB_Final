@@ -10,61 +10,105 @@
     # в таблице courses - id_course
     # в таблице scores - id_score
 # устанавливаем отношения между таблицами и внешние ключи:
+    # в таблице students - внешнйи ключ references groups(id_group)
     # в таблице courses - внешний ключ teachers(id_teacher)
-    # в таблице scores - внешние ключи courses(id_student)б (id_course)
+    # в таблице scores - внешние ключи courses(id_student), (id_course)
 # создаем ограничения на атрибуты:
     # DoB_Value в таблицах students, teachers - после 1 января 1901 до текущей даты
     # Score_Value в таблице score - от 2 до 5
-# создаем ограничения уникальности must_be_different для групп столбцов - во избежание дублирования строк:
+# создаем ограничения уникальности must_be_different для групп столбцов (ненулевых) - во избежание дублирования строк:
     # в таблице students - для группы столбцов name_student, dob_student, email_student
     # в таблице teachers - для группы столбцов name_teacher, dob_teacher, email_teacher
     # в таблице courses - для группы столбцов name_course, id_teacher
 # создаем ограничения уникальности must_be_different в таблице scores
     # для группы столбцов id_student, id_course - во избежание противоречивых записей об оценках
 
+CREATE TABLE groups (
+    id_group INT PRIMARY KEY,
+    name_group CHARACTER VARYING(128) NOT NULL UNIQUE
+);
+
 CREATE TABLE students (
     id_student INT PRIMARY KEY,
-    name_student CHARACTER VARYING(128),
-    dob_student DATE CONSTRAINT DoB_Value CHECK (dob_student > '1901-01-01' AND dob_student < CURRENT_DATE),
-    email_student CHARACTER VARYING(128),
+    name_student CHARACTER VARYING(128) NOT NULL,
+    dob_student DATE CONSTRAINT NOT NULL DoB_Value CHECK (dob_student > '1901-01-01' AND dob_student < CURRENT_DATE),
+    email_student CHARACTER VARYING(128) NOT NULL,
+    id_group NOT NULL references groups(id_group),
     CONSTRAINT must_be_different UNIQUE(name_student, dob_student, email_student)
 );
 
 CREATE TABLE teachers (
     id_teacher INT PRIMARY KEY,
-    name_teacher CHARACTER VARYING(128),
-    dob_teacher DATE CONSTRAINT DoB_Value CHECK (dob_teacher > '1901-01-01' AND dob_teacher < CURRENT_DATE),
-    email_teacher CHARACTER VARYING(128),
+    name_teacher CHARACTER VARYING(128) NOT NULL,
+    dob_teacher DATE NOT NULL CONSTRAINT DoB_Value CHECK (dob_teacher > '1901-01-01' AND dob_teacher < CURRENT_DATE),
+    email_teacher CHARACTER VARYING(128) NOT NULL,
     CONSTRAINT must_be_different UNIQUE(name_teacher, dob_teacher, email_teacher)
 );
 
 CREATE TABLE courses (
     id_course INT PRIMARY KEY,
-    name_course CHARACTER VARYING(128),
-    id_teacher INT references teachers(id_teacher),
+    name_course CHARACTER VARYING(128) NOT NULL,
+    id_teacher INT NOT NULL references teachers(id_teacher),
     CONSTRAINT must_be_different UNIQUE(name_course, id_teacher)
 );
 
 CREATE TABLE scores (
     id_score INT PRIMARY KEY,
-    id_student INT references students(id_student),
-    id_course INT references courses(id_course),
-    score_date DATE CONSTRAINT DoB_Value CHECK (dob_student > '1901-01-01' AND dob_student < CURRENT_DATE),
-    id_teacher INT references teachers(id_teacher),
-    score SMALLINT CONSTRAINT Score_Value CHECK (score > 1 AND score < 6),
+    id_student INT NOT NULL references students(id_student),
+    id_course INT NOT NULL references courses(id_course),
+    score_date DATE CONSTRAINT DoB_Value CHECK (score_date > '1901-01-01' AND score_date < CURRENT_DATE),
+    score SMALLINT NOT NULL CONSTRAINT Score_Value CHECK (score > 1 AND score < 6),
     CONSTRAINT must_be_different UNIQUE(id_student, id_course)
 );
 
 # СОЗДАЕМ ТРИГГЕРЫ
 
-# триггеры на удаление строк в таблицах students, teachers, courses -
-    # во избежание сохранения некоррелирующих записей в таблицах courses, scores
+# триггеры на удаление строк в таблицах students, teachers, courses - во избежание
+    # сохранения после этого некорректных (некоррелирующих) записей в таблицах courses, scores
 
-CREATE TRIGGER delete_students AFTER DELETE ON students FOR EACH ROW
+CREATE TRIGGER delete_student AFTER DELETE ON students FOR EACH ROW
     DELETE FROM scores WHERE id_student = OLD.id_student;
 
-CREATE TRIGGER delete_teachers AFTER DELETE ON teachers FOR EACH ROW
-    DELETE FROM scores WHERE id_student = OLD.id_student;
+CREATE TRIGGER delete_teacher AFTER DELETE ON teachers FOR EACH ROW
+    DELETE FROM courses WHERE id_teacher = OLD.id_teacher;
+
+CREATE TRIGGER delete_course AFTER DELETE ON teachers FOR EACH ROW
+    DELETE FROM scores WHERE id_course = OLD.id_course;
+
+# СОЗДАЕМ ПРОЦЕДУРЫ
+
+# Процедура запроса к базе данных - возможность выводить список студентов по определённому предмету
+
+# Процедура запроса к базе данных - возможность выводить список предметов, которые преподает конкретный преподаватель
+
+# Процедура запроса к базе данных - возможность выводить средний балл студента по всем предметам
+
+# Процедура запроса к базе данных - возможность выводить рейтинг преподавателей по средней оценке студентов
+
+# Процедура запроса к базе данных - возможность выводить список преподавателей, которые преподавали более 3 предметов за последний год
+
+# Процедура запроса к базе данных - возможность выводить список студентов, которые имеют средний балл
+    # выше 4 по математическим предметам, но ниже 3 по гуманитарным
+
+# Процедура запроса к базе данных - возможность определить предметы, по которым больше всего двоек в текущем семестре
+
+# Процедура запроса к базе данных - возможность выводить студентов, которые получили высший балл по всем своим экзаменам,
+    # и преподавателей, которые вели эти предметы
+
+# Процедура запроса к базе данных - возможность просматривать изменение среднего балла студента по годам обучения
+
+# Процедура запроса к базе данных - возможность определить группы, в которых средний балл выше, чем в других,
+    # по аналогичным предметам, чтобы выявить лучшие методики преподавания или особенности состава группы
+
+# Процедура запроса к базе данных - вставка записи о новом студенте с его личной информацией, такой как ФИО, дата рождения, контактные данные и др.
+
+# Процедура запроса к базе данных - обновление контактной информации преподавателя, например, электронной почты или номера телефона,
+    # на основе его идентификационного номера или ФИО
+
+# Процедура запроса к базе данных - удаление записи о предмете, который больше не преподают в учебном заведении
+
+# Процедура запроса к базе данных - вставка новой записи об оценке, выставленной студенту по определённому предмету,
+    # с указанием даты, преподавателя и полученной оценки
 
 
 
