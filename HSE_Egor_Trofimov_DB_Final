@@ -47,11 +47,27 @@ CREATE TABLE courses (
 
 CREATE TABLE scores (
     id_score INT PRIMARY KEY,
-    id_student INT references courses(id_student),
+    id_student INT references students(id_student),
     id_course INT references courses(id_course),
+    score_date DATE CONSTRAINT DoB_Value CHECK (dob_student > '1901-01-01' AND dob_student < CURRENT_DATE),
+    id_teacher INT references teachers(id_teacher),
     score SMALLINT CONSTRAINT Score_Value CHECK (score > 1 AND score < 6),
     CONSTRAINT must_be_different UNIQUE(id_student, id_course)
 );
+
+# СОЗДАЕМ ТРИГГЕРЫ
+
+# триггеры на удаление строк в таблицах students, teachers, courses -
+    # во избежание сохранения некоррелирующих записей в таблицах courses, scores
+
+CREATE TRIGGER delete_students AFTER DELETE ON students FOR EACH ROW
+    DELETE FROM scores WHERE id_student = OLD.id_student;
+
+CREATE TRIGGER delete_teachers AFTER DELETE ON teachers FOR EACH ROW
+    DELETE FROM scores WHERE id_student = OLD.id_student;
+
+
+
 
 # ЗАПОЛНЯЕМ ТАБЛИЦЫ СТРОКАМИ
 
